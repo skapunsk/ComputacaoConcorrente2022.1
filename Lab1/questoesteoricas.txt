@@ -1,0 +1,4 @@
+1 - Sim, a ordem da execução das thread varia devido a fluxos diferentes. Quem decide a ordem de execução é o próprio sistema.
+2 - As threads criadas recebem o identificador como parâmetro. Assim sendo possível identificar a thread.
+3 - Sim. Realizei diversos testes.
+4 - O join faz com que todas as threads sejam finalizadas antes de exectur o restante do código.
