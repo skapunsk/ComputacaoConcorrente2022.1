@@ -51,8 +51,6 @@ void verificador(int *matResSeq, int *matResConc, int dim){
             }
 }
 
-
-
 int main(int argc, char* argv[]) {
     int dim; //dimensao das matrizes
     pthread_t *tid; //identificadores das threads no sistema    
@@ -126,7 +124,6 @@ int main(int argc, char* argv[]) {
     imprimeMatriz(dim, matResSeq);
     puts("\nMatriz Concorrente");
     imprimeMatriz(dim, matResConc);*/
-
 
     free(mat1);
     free(mat2);
