@@ -42,6 +42,16 @@ void *multiplicaoConcorrente(void *arg) {
    pthread_exit(NULL);
 }
 
+void verificador(int *matResSeq, int *matResConc, int dim){
+    for (int i = 0; i < dim; i++)
+        for (int j = 0; j < dim; j++)
+            if(matResSeq[(i*dim)+j] != matResConc[(i*dim)+j]){
+                printf("As matrizes não batem\n");
+                break;
+            }
+}
+
+
 
 int main(int argc, char* argv[]) {
     int dim; //dimensao das matrizes
@@ -107,6 +117,7 @@ int main(int argc, char* argv[]) {
     printf("Tempo Multiplicacao com Threads: %lf\n", deltaConc);
     aceleracao = deltaSeq/deltaConc;
     printf("Aceleracao: %lf\n", aceleracao);
+    verificador(matResSeq, matResConc, dim);
     /*puts("Matriz 1");
     imprimeMatriz(dim, mat1);
     puts("\nMatriz 2");
