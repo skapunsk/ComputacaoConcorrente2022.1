@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
     int dim; //dimensao das matrizes
     pthread_t *tid; //identificadores das threads no sistema    
     tArgs *args; //identificadores locais das threads e dimensao
-    //double inicio, fim, delta;
+    double inicio, fim, deltaSeq, deltaConc, aceleracao;
 
     //leitura e avaliacao dos parametros de entrada
     if(argc<3) {
@@ -78,13 +78,13 @@ int main(int argc, char* argv[]) {
       }
     }
     
-    /*GET_TIME(inicio);
+    GET_TIME(inicio);
     multiplicaoSequencial(mat1, mat2, matResSeq, dim);
     GET_TIME(fim);
-    delta = fim - inicio;
-    printf("Tempo Multiplicacao Sequencial:%lf\n", delta);*/
+    deltaSeq = fim - inicio;
+    printf("Tempo Multiplicacao Sequencial:%lf\n", deltaSeq);
     //alocacao das estruturas
-    //GET_TIME(inicio);
+    GET_TIME(inicio);
     tid = (pthread_t*) malloc(sizeof(pthread_t)*nthreads);
     if(tid==NULL) {puts("ERRO--malloc"); return 2;}
     args = (tArgs*) malloc(sizeof(tArgs)*nthreads);
@@ -102,9 +102,11 @@ int main(int argc, char* argv[]) {
     for(int i=0; i<nthreads; i++) {
         pthread_join(*(tid+i), NULL);
     }
-    /*GET_TIME(fim);   
-    delta = fim - inicio;
-    printf("Tempo multiplicacao com Threads: %lf\n", dim, nthreads, delta);*/
+    GET_TIME(fim);   
+    deltaConc = fim - inicio;
+    printf("Tempo Multiplicacao com Threads: %lf\n", deltaConc);
+    aceleracao = deltaSeq/deltaConc;
+    printf("Aceleracao: %lf\n", aceleracao);
     /*puts("Matriz 1");
     imprimeMatriz(dim, mat1);
     puts("\nMatriz 2");
