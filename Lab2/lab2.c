@@ -1,4 +1,4 @@
-/* Multiplicacao de matriz-vetor (considerando matrizes quadradas) */
+/* Multiplicacao de matriz-matriz (considerando matrizes quadradas) */
 #include<stdio.h>
 #include<stdlib.h>
 #include<pthread.h>
@@ -77,6 +77,7 @@ int main(int argc, char* argv[]) {
     if (matResConc == NULL) {printf("ERRO--malloc\n"); return 2;}
 
     //inicializacao das estruturas de dados de entrada e saida
+    srand(time(0));
     for(int i=0; i<dim; i++) {
       for(int j=0; j<dim; j++){
          mat1[i*dim+j] = rand() % (100 + 1 - 1) + 1;
