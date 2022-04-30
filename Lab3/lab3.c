@@ -4,17 +4,17 @@
 #include "timer.h"
 
 //gcc lab3.c -o lab3 -Wall -lpthread
-int dim;
+long int dim;
 float *vetor;
 float menorSeq;
 float maiorSeq;
 float *menorConc;
 float *maiorConc;
-int nthreads;
+long int nthreads;
 
 
-void imprimeVetor(int  dim, float *vetor) {
-        for (int i = 0; i < dim; i++)
+void imprimeVetor(long int  dim, float *vetor) {
+        for (long int i = 0; i < dim; i++)
             printf("%.5f ", vetor[i]);
         printf ("\n");
 }
@@ -36,11 +36,9 @@ void *procura(void *arg) {
    for(long int i=ini; i<fim; i++){
        if(vetor[i] < *menorConc){
             *menorConc = vetor[i];
-             printf("%.5f\n", *menorConc);
        }
        if(vetor[i] > *maiorConc){
             *maiorConc = vetor[i];
-             printf("%.5f\n", *maiorConc);
        }
    }
    pthread_exit(NULL);
@@ -49,6 +47,7 @@ void *procura(void *arg) {
 //fluxo principal
 int main(int argc, char* argv[]) {
     pthread_t *tid; //identificadores das threads no sistema    
+    double inicio, fim, deltaSeq, deltaConc, aceleracao;
 
     if(argc<3) {
       printf("Digite: %s <tamanho do vetor> <numero de threads>\n", argv[0]);
@@ -62,10 +61,13 @@ int main(int argc, char* argv[]) {
     if (vetor == NULL) {printf("ERRO--malloc\n"); return 2;}
 
     srand(time(0));
-    for(int i=0; i<dim; i++)
+    for(long int i=0; i<dim; i++)
       vetor[i] = gerador(0, 100);
     
-    for(int i = 0; i < dim; i++){
+    //imprimeVetor(dim, vetor);
+
+    GET_TIME(inicio);
+    for(long int i = 0; i < dim; i++){
         if(i == 0){
             menorSeq = vetor[i];
             maiorSeq = vetor[i];
@@ -76,6 +78,9 @@ int main(int argc, char* argv[]) {
                 maiorSeq = vetor[i];
         }
     }
+    GET_TIME(fim);
+    deltaSeq = fim - inicio;
+    printf("Tempo Sequencial:%lf\n", deltaSeq);
 
     menorConc = (float*) malloc(sizeof(float));
     if(menorConc==NULL) {exit(1);}
@@ -84,6 +89,7 @@ int main(int argc, char* argv[]) {
     if(maiorConc==NULL) {exit(1);}
     *maiorConc = vetor[0];
 
+    GET_TIME(inicio);
     //alocacao das estruturas
     tid = (pthread_t*) malloc(sizeof(pthread_t)*nthreads);
     if(tid==NULL) {puts("ERRO--malloc"); return 2;}
@@ -95,11 +101,14 @@ int main(int argc, char* argv[]) {
     } 
 
     //espera pelo termino da threads
-    for(int i=0; i<nthreads; i++) {
+    for(long int i=0; i<nthreads; i++) {
         pthread_join(*(tid+i), NULL);
     }
-
-    imprimeVetor(dim, vetor);
+    GET_TIME(fim);   
+    deltaConc = fim - inicio;
+    printf("Tempo Concorrente: %lf\n", deltaConc);
+    aceleracao = deltaSeq/deltaConc;
+    printf("Aceleracao: %lf\n", aceleracao);
 
     printf("Menor numero sequencial: %.5f\n", menorSeq);
     printf("Maior numero sequencial: %.5f\n", maiorSeq);
