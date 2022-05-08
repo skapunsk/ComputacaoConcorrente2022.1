@@ -9,6 +9,9 @@
 long int dim;
 long int *vetor;
 float *vetorSaidaSequencial;
+float *vetorSaidaConcorrente;
+long int nthreads;
+pthread_mutex_t mutex;
 
 void imprimeVetorInt(long int  dim, long int *vetor) {
         for (long int i = 0; i < dim; i++)
@@ -45,22 +48,55 @@ void processaPrimos(long int *vetorEntrada, float *vetorSaida, long int dim) {
     }
 }
 
+void *ExecutaTarefa (void *threadid) {
+  int i, tid = *(int*) threadid;
+  for (i=tid; i < dim; i+=nthreads) {
+     //--entrada na SC
+     //pthread_mutex_lock(&mutex);
+     //--SC
+     if (ehPrimo(vetor[i]))
+            vetorSaidaConcorrente[i] = sqrt(vetor[i]);
+        else
+            vetorSaidaConcorrente[i] = vetor[i]; 
+    //incrementa o contador de tarefas realizadas 
+     //--saida da SC
+     //pthread_mutex_unlock(&mutex);
+  }
+  pthread_exit(NULL);
+}
+
+void verificador(float *vetorSeq, float *vetorConc, int dim){
+    for (int i = 0; i < dim; i++)
+        if(vetorSeq[i] != vetorConc[i]){
+            printf("Os vetores não batem\n");
+            break;
+        }
+}
+
 int main(int argc, char* argv[]) {
-    double inicio, fim, deltaSeq, aceleracao;    
-    if(argc<2) {
-      printf("Digite: %s <tamanho do vetor>\n", argv[0]);
+    pthread_t *tid; //identificadores das threads no sistema
+    int *id;    
+    double inicio, fim, deltaSeq, deltaConc, aceleracao;    
+    if(argc<3) {
+      printf("Digite: %s <tamanho do vetor> <numero de threads>\n", argv[0]);
       return 1;
     }
     dim = atoi(argv[1]);
+    nthreads = atoi(argv[2]);
+    if (nthreads > dim) nthreads=dim;
+
     vetor = (long int *) malloc(sizeof(long int) * dim);
     if (vetor == NULL) {printf("ERRO--malloc\n"); return 2;}
     vetorSaidaSequencial = (float *) malloc(sizeof(float) * dim);
     if (vetorSaidaSequencial == NULL) {printf("ERRO--malloc\n"); return 2;}
+    vetorSaidaConcorrente = (float *) malloc(sizeof(float) * dim);
+    if (vetorSaidaConcorrente == NULL) {printf("ERRO--malloc\n"); return 2;}
 
     srand(time(0));
     for(long int i=0; i<dim; i++){
       vetor[i] = gerador(1, 100);
       vetorSaidaSequencial[i] = 0;
+      vetorSaidaConcorrente[i] = 0;
     }
     GET_TIME(inicio);
     processaPrimos(vetor, vetorSaidaSequencial, dim);
@@ -68,9 +104,44 @@ int main(int argc, char* argv[]) {
     deltaSeq = fim - inicio;
     printf("Tempo Sequencial:%lf\n", deltaSeq);
 
+    GET_TIME(inicio);
+    //alocacao das estruturas
+    tid = (pthread_t*) malloc(sizeof(pthread_t)*nthreads);
+    if(tid==NULL) {puts("ERRO--malloc"); return 2;}
+    id = (int*) malloc(sizeof(int)*nthreads);
+    if(id==NULL) {puts("ERRO--malloc"); return 2;}
+    //--inicilaiza o mutex (lock de exclusao mutua)
+    pthread_mutex_init(&mutex, NULL);
+
+    //criacao das threads
+    for(int t=0; t<nthreads; t++) {
+        id[t]=t;
+        if (pthread_create(&tid[t], NULL, ExecutaTarefa, (void *) &id[t])) {
+            printf("--ERRO: pthread_create()\n"); exit(-1);
+        }
+    }
+    //--espera todas as threads terminarem
+    for (int t=0; t<nthreads; t++) {
+        if (pthread_join(tid[t], NULL)) {
+            printf("--ERRO: pthread_join() \n"); exit(-1); 
+        } 
+    } 
+    pthread_mutex_destroy(&mutex);
+
+    GET_TIME(fim);
+    deltaConc = fim - inicio;
+    printf("Tempo Concorrente:%lf\n", deltaConc);
+
+    aceleracao = deltaSeq/deltaConc;
+    printf("Aceleracao: %lf\n", aceleracao);
+
+    verificador(vetorSaidaSequencial, vetorSaidaConcorrente, dim);
+
     //imprimeVetorInt(dim, vetor);
     //imprimeVetorFloat(dim, vetorSaidaSequencial);
+    //imprimeVetorFloat(dim, vetorSaidaConcorrente);
     free(vetor); 
-    free(vetorSaidaSequencial);       
+    free(vetorSaidaSequencial);
+    free(vetorSaidaConcorrente);       
     return 0;
 }
