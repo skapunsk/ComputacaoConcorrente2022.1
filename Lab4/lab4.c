@@ -12,6 +12,7 @@ float *vetorSaidaSequencial;
 float *vetorSaidaConcorrente;
 long int nthreads;
 pthread_mutex_t mutex;
+long int indice = 0;
 
 void imprimeVetorInt(long int  dim, long int *vetor) {
         for (long int i = 0; i < dim; i++)
@@ -49,19 +50,12 @@ void processaPrimos(long int *vetorEntrada, float *vetorSaida, long int dim) {
 }
 
 void *ExecutaTarefa (void *threadid) {
-  int i, tid = *(int*) threadid;
-  for (i=tid; i < dim; i+=nthreads) {
-     //--entrada na SC
-     //pthread_mutex_lock(&mutex);
-     //--SC
-     if (ehPrimo(vetor[i]))
-            vetorSaidaConcorrente[i] = sqrt(vetor[i]);
-        else
-            vetorSaidaConcorrente[i] = vetor[i]; 
-    //incrementa o contador de tarefas realizadas 
-     //--saida da SC
-     //pthread_mutex_unlock(&mutex);
-  }
+    while(indice < dim){
+     pthread_mutex_lock(&mutex);
+     long int i = indice++;
+     pthread_mutex_unlock(&mutex);
+     vetorSaidaConcorrente[i] = ehPrimo(vetor[i]) ? sqrt(vetor[i]) : vetor[i];
+    }
   pthread_exit(NULL);
 }
 
@@ -75,7 +69,6 @@ void verificador(float *vetorSeq, float *vetorConc, int dim){
 
 int main(int argc, char* argv[]) {
     pthread_t *tid; //identificadores das threads no sistema
-    int *id;    
     double inicio, fim, deltaSeq, deltaConc, aceleracao;    
     if(argc<3) {
       printf("Digite: %s <tamanho do vetor> <numero de threads>\n", argv[0]);
@@ -94,7 +87,7 @@ int main(int argc, char* argv[]) {
 
     srand(time(0));
     for(long int i=0; i<dim; i++){
-      vetor[i] = gerador(1, 100);
+      vetor[i] = gerador(1, 100000000);
       vetorSaidaSequencial[i] = 0;
       vetorSaidaConcorrente[i] = 0;
     }
@@ -108,21 +101,18 @@ int main(int argc, char* argv[]) {
     //alocacao das estruturas
     tid = (pthread_t*) malloc(sizeof(pthread_t)*nthreads);
     if(tid==NULL) {puts("ERRO--malloc"); return 2;}
-    id = (int*) malloc(sizeof(int)*nthreads);
-    if(id==NULL) {puts("ERRO--malloc"); return 2;}
     //--inicilaiza o mutex (lock de exclusao mutua)
     pthread_mutex_init(&mutex, NULL);
 
     //criacao das threads
     for(int t=0; t<nthreads; t++) {
-        id[t]=t;
-        if (pthread_create(&tid[t], NULL, ExecutaTarefa, (void *) &id[t])) {
+        if (pthread_create(tid+t, NULL, ExecutaTarefa, NULL)) {
             printf("--ERRO: pthread_create()\n"); exit(-1);
         }
     }
     //--espera todas as threads terminarem
     for (int t=0; t<nthreads; t++) {
-        if (pthread_join(tid[t], NULL)) {
+        if (pthread_join(*(tid+t), NULL)) {
             printf("--ERRO: pthread_join() \n"); exit(-1); 
         } 
     } 
@@ -142,6 +132,7 @@ int main(int argc, char* argv[]) {
     //imprimeVetorFloat(dim, vetorSaidaConcorrente);
     free(vetor); 
     free(vetorSaidaSequencial);
-    free(vetorSaidaConcorrente);       
+    free(vetorSaidaConcorrente);
+    free(tid);       
     return 0;
 }
