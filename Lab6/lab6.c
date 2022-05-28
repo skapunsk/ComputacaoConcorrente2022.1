@@ -3,15 +3,13 @@
 #include<stdlib.h>
 #include<unistd.h>
 
-//gcc lab6.c -o lab6 -Wall -lpthread
-
-
-#define L 6 //numero de threads leitoras
+#define L 4 //numero de threads leitoras
 #define E 2 //numero de threads escritoras
 
 //variaveis do problema
 int leit=0; //contador de threads lendo
 int escr=0; //contador de threads escrevendo
+int escrW=0; // contador de threds de escrita esperando 
 
 //variaveis para sincronizacao
 pthread_mutex_t mutex;
@@ -21,7 +19,7 @@ pthread_cond_t cond_leit, cond_escr;
 void InicLeit (int id) {
    pthread_mutex_lock(&mutex);
    printf("L[%d] quer ler\n", id);
-   while(escr > 0) {
+   while(escr > 0 || escrW > 0 ) {
      printf("L[%d] bloqueou\n", id);
      pthread_cond_wait(&cond_leit, &mutex);
      printf("L[%d] desbloqueou\n", id);
@@ -35,7 +33,7 @@ void FimLeit (int id) {
    pthread_mutex_lock(&mutex);
    printf("L[%d] terminou de ler\n", id);
    leit--;
-   if(escr==0) pthread_cond_signal(&cond_escr);
+   if(leit==0) pthread_cond_signal(&cond_escr);
    pthread_mutex_unlock(&mutex);
 }
 
@@ -43,9 +41,11 @@ void FimLeit (int id) {
 void InicEscr (int id) {
    pthread_mutex_lock(&mutex);
    printf("E[%d] quer escrever\n", id);
-   while((escr>0)) {
+   while((leit>0) || (escr>0)) {
      printf("E[%d] bloqueou\n", id);
+     escrW++;
      pthread_cond_wait(&cond_escr, &mutex);
+     escrW--;
      printf("E[%d] desbloqueou\n", id);
    }
    escr++;
@@ -58,7 +58,7 @@ void FimEscr (int id) {
    printf("E[%d] terminou de escrever\n", id);
    escr--;
    pthread_cond_signal(&cond_escr);
-   if(escr==0 && leit == 0) pthread_cond_broadcast(&cond_leit);
+   if(escrW == 0) pthread_cond_broadcast(&cond_leit);
    pthread_mutex_unlock(&mutex);
 }
 
